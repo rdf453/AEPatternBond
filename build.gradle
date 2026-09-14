@@ -28,7 +28,13 @@ sourceSets.main.resources {
 }
 
 repositories {
-    // Add here additional repositories if required by some of the dependencies below.
+    maven {
+        name = "CurseForge"
+        url = "https://cursemaven.com"
+        content {
+            includeGroup "curse.maven"
+        }
+    }
 }
 
 base {
@@ -108,7 +114,7 @@ configurations {
 }
 
 dependencies {
-
+    implementation "curse.maven:applied-energistics-2-223794:8257570"
 }
 
 var generateModMetadata = tasks.register("generateModMetadata", ProcessResources) {
