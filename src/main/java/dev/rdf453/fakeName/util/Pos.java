@@ -13,11 +13,11 @@ public class Pos {
     public void setSecondBlockPos(BlockPos pos) {
         this.secBlockPos = pos;
     }
-
-    public Area getSpaceBlockPos() {
-        return new Area(firBlockPos,secBlockPos);
+    public record Area(BlockPos first,BlockPos second) {}
+    
+        public void getSpaceBlockPos() {
+        new Area(firBlockPos,secBlockPos);
     }
 
-    public record Area(BlockPos first,BlockPos second) {
-    }
+    
 }

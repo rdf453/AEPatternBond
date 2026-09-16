@@ -1,6 +1,5 @@
 package dev.rdf453.fakeName.glue;
 
-import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.core.BlockPos;
 import net.minecraft.util.TriState;
 import net.minecraft.world.entity.LivingEntity;
@@ -21,14 +20,15 @@ public class PatternGlueItem extends Item {
     
     @SubscribeEvent 
     public static void whenUsedGlue(PlayerInteractEvent.RightClickBlock e) {
-        
-        if(e.getLevel().getBlockEntity(e.getPos()) instanceof PatternProviderBlockEntity) {
+        if (!(e.getItemStack().getItem() instanceof PatternGlueItem)) {
             return;
         }
         
-        if(e.getItemStack().getItem() instanceof PatternGlueItem) {
+        if (e.getLevel().getBlockEntity(e.getPos()) instanceof PatternProviderBlockEntity) {
             e.setUseBlock(TriState.FALSE);
         }
+        
+        
     }
 
     public PatternGlueItem(Properties prob) {
