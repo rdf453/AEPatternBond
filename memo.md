@@ -69,21 +69,92 @@
 - `src/main/java/dev/rdf453/fakeName/masterProvider/providerBE.java`: provider 집계와 패턴 통합의 개념적 자리
 - `src/main/java/dev/rdf453/fakeName/util/Pos.java`: 영역 좌표 모델의 초기 흔적
 - `build.gradle`: NeoForge, Java, AE2 버전 및 의존성
+## Plan: AABB 공유 패턴 인벤토리
+
+Create Super Glue 방식으로 지정한 AABB 엔티티를 공유 패턴 인벤토리로 사용한다. 영역 안에 있는 AE2 Pattern Provider들은 자신의 패턴 슬롯 대신 AABB의 공유 슬롯을 읽는다. Provider 자체는 계속 AE2 Grid와 채널을 사용하므로 채널 비용과 밸런스는 유지하고, 여러 Provider에 같은 패턴을 반복해서 넣고 관리하는 비용만 줄인다.
+
+**핵심 구조**
+- `PatternGlueEntity`는 정규화된 AABB와 공유 패턴 슬롯을 소유한다.
+- `PatternGlueEntitySlot`은 공유 `ItemStack` 인벤토리의 슬롯 저장, 삽입·추출, 저장·로드를 담당한다.
+- AABB 내부의 `PatternProviderBlockEntity`는 공유 인벤토리를 패턴 인벤토리로 읽고, 영역 밖이거나 연결되지 않으면 기존 인벤토리를 사용한다.
+- 기존 Provider들은 실제 AE2 Grid 노드와 채널을 계속 사용한다. 공유 인벤토리는 채널을 대체하지 않는다.
+- 기존 AE2 패턴 처리와 기계 작업 로직을 우선 재사용한다. 별도 스케줄러는 원본 로직으로 부족한 것이 확인된 뒤에만 추가한다.
+
+**구현 단계**
+
+1. **공유 인벤토리 최소 구현**
+	- `PatternGlueEntitySlot`에 고정 크기의 `ItemStack` 슬롯을 만든다.
+	- 처음에는 AE2 Pattern Provider 하나의 실제 슬롯 수를 넘지 않게 한다.
+	- 빈 슬롯, 삽입, 추출, 슬롯 범위 검사, 저장·로드를 정의한다.
+	- 패턴을 Provider마다 복사하지 않고 AABB 슬롯을 단일 원본으로 삼는다.
+
+2. **AABB 엔티티와 Super Glue 연결**
+	- `PatternGlueEntity`에 두 선택점 또는 정규화된 최소·최대 좌표, 차원, 공유 슬롯을 저장한다.
+	- `PatternGlueItem`의 첫 클릭과 두 번째 클릭으로 영역을 생성하고 서버에서 최종 승인한다.
+	- 취소, 잘못된 대상, 거리 초과, 차원 변경, 중복 영역을 처리한다.
+	- 영역 생성·블록 변경·Provider 파괴·제한된 재검증 시점에만 내부 Provider 목록을 갱신한다.
+	- 매 틱 전체 월드를 스캔하지 않는다.
+
+3. **영역 시각화와 기본 UI**
+	- 선택 중인 영역과 생성된 AABB를 클라이언트에서 표시한다.
+	- 실제 엔티티의 hitbox가 아니라 저장된 좌표를 기준으로 표시하고 판정한다.
+	- 공유 슬롯을 확인하고 패턴을 넣고 뺄 수 있는 최소 UI를 만든다.
+	- 화면 정렬이 필요하면 기존 AE2 패턴 패널 규칙을 우선 사용하고, 별도 정렬 시에는 좌표가 작은 순서를 사용한다.
+
+4. **AE2 패턴 인식 수직 검증**
+	- 현재 AE2 버전의 `PatternProviderBlockEntity`, `PatternProviderLogic`, 패턴 인벤토리 접근 지점을 확인한다.
+	- 공식 확장 지점이 없을 때만 Mixin으로 실제 패턴 조회 또는 패턴 열거 지점을 가로챈다.
+	- Provider가 유효한 AABB 내부에 있으면 공유 인벤토리를 읽고, 아니면 원래 인벤토리를 읽게 한다.
+	- 공유 인벤토리 크기는 처음부터 AE2가 기대하는 Provider 슬롯 범위를 넘기지 않는다.
+	- 공유 슬롯 변경 시 AE2 패턴 목록과 Grid 캐시 갱신이 필요한지 확인하고 필요한 알림을 호출한다.
+	- 첫 성공 기준은 `AABB 슬롯 1개 -> Provider 1개 -> AE2 터미널에서 패턴 인식`이다.
+
+5. **여러 Provider의 공유와 복구**
+	- Provider 여러 개가 같은 AABB 공유 슬롯을 읽도록 확장한다.
+	- 동일 패턴이 여러 Provider에 노출되는 방식과 AE2의 중복 표시·작업 예약 동작을 확인한다.
+	- 각 Provider의 채널과 실제 작업 위치는 유지되는지 확인한다.
+	- AABB 제거, 영역 이탈, Provider 파괴, 청크 언로드 시 stale 참조가 남지 않고 원래 인벤토리와 Grid 연결로 안전하게 돌아가는지 검증한다.
+	- 영역 중첩은 초기에는 금지하거나 명확한 우선순위를 둔다.
+
+6. **병렬 처리와 요청 수량**
+	- 공유 패턴 인식이 안정화된 뒤에만 병렬 처리 개선을 검토한다.
+	- 목표는 여러 Provider의 채널 비용은 유지하면서, 논리적으로 적은 수의 패턴만 관리하는 것이다.
+	- AE2 원본 로직이 각 Provider와 연결 기계의 작업을 이미 처리하는지 먼저 확인한다.
+	- 원본 로직만으로 부족할 때만 작업 예약 ID, 기계 상태, 재료 투입, 결과 회수, 서버 재시작 복구를 갖춘 스케줄러를 추가한다.
+	- 요청 가능한 아이템 수량은 단순 슬롯 수가 아니라 연결된 Provider와 기계의 처리 능력이 AE2에 어떻게 집계되는지 확인한 뒤 확장한다.
+
+**현재 주요 파일**
+
+- `src/main/java/dev/rdf453/fakeName/glue/PatternGlueEntitySlot.java`: 공유 패턴 인벤토리
+- `src/main/java/dev/rdf453/fakeName/glue/PatternGlueEntity.java`: AABB와 공유 슬롯의 소유·저장·로드
+- `src/main/java/dev/rdf453/fakeName/glue/PatternGlueItem.java`: Super Glue식 영역 선택과 연결 갱신
+- `src/main/java/dev/rdf453/fakeName/dummyProvider/DummyProvider.java`: 공유 슬롯 참조를 검증할 초기 Provider 실험 대상
+- `src/main/java/dev/rdf453/fakeName/masterProvider/masterProviderBlockEntity.java`: 더미-마스터 구조는 보류하고 필요할 때만 재검토
+- `build.gradle`: NeoForge와 AE2 의존성
 
 **검증 순서**
 
-1. 각 단계 후 `./gradlew compileJava` 실행
-2. 일반 아이템으로 Pattern Provider를 우클릭했을 때 UI가 막히지 않는지 확인
-3. glue 도구로 두 지점을 선택해 하나의 풀만 생성되는지 확인
-4. 월드 저장/로드와 청크 언로드/로드 확인
-5. provider 파괴 후 풀 매핑 정리 확인
-6. AE2 네트워크에서 패턴 조회, 삽입/삭제, crafting 요청 확인
-7. 외부 기계 연결은 capability와 AE2 grid를 별도로 검증
+1. 각 구현 단계 후 `./gradlew compileJava` 실행
+2. 공유 슬롯에 패턴 하나를 넣고 Provider 하나가 AE2 터미널에서 인식하는지 확인
+3. 공유 슬롯의 삽입·추출·저장·로드 확인
+4. Provider 여러 개가 같은 패턴을 읽고 AE2에서 중복이 어떻게 표시되는지 확인
+5. AABB 삭제·Provider 파괴·청크 언로드 후 원래 인벤토리와 Grid 연결 확인
+6. 공유 패턴 변경 직후 AE2 캐시가 갱신되는지 확인
+7. 마지막에 실제 기계 병렬 처리와 요청 수량 증가를 테스트
 
 **결정 사항**
 
-- AE2 Pattern Provider 위에 별도 BlockEntity를 겹쳐 두지 않는다.
-- 풀 영역과 시각화는 독립 엔티티로 시작한다.
-- 멀티블록은 단일 마스터 구조를 사용한다.
-- 외부 기계 capability는 AE2 grid 통합과 별도로 구현한다.
-- 첫 구현 범위는 완전한 멀티블록 외형이나 모든 외부 기계가 아니라, 풀 선택·저장·표시까지로 제한한다.
+- 더미-마스터 간 패턴 복사는 기본 설계에서 제외한다.
+- AABB 공유 인벤토리를 패턴의 단일 원본으로 둔다.
+- Provider는 계속 채널을 사용하며, 공유 인벤토리는 채널 절감 장치가 아니다.
+- 공유 슬롯은 처음부터 Provider의 고정 슬롯 범위 안에서 시작한다.
+- Mixin은 공식 확장 지점이 없을 때만 실제 패턴 조회·변경 알림 지점에 적용한다.
+- 병렬 스케줄러와 무제한 슬롯 확장은 공유 패턴 인식 검증 뒤로 미룬다.
+
+**제외 범위**
+
+- 첫 단계에서 완전한 커스텀 AE2 Grid 서비스 구현
+- Provider마다 패턴 복사 및 동기화
+- AABB 하나가 채널을 대체하는 동작
+- 모든 외부 기계 capability를 한 번에 지원
+- 패턴 인벤토리의 무제한 동적 확장
