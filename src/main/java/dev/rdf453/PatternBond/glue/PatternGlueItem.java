@@ -1,4 +1,4 @@
-package dev.rdf453.fakeName.glue;
+package dev.rdf453.PatternBond.glue;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.util.TriState;

@@ -1,33 +1,42 @@
-package dev.rdf453.fakeName.glue;
+package dev.rdf453.PatternBond.glue;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Set;
 
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
 import net.minecraft.world.entity.Entity;
+import net.minecraft.world.level.LevelAccessor;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 import net.neoforged.neoforge.entity.IEntityWithComplexSpawn;
+import appeng.blockentity.crafting.PatternProviderBlockEntity;
+import dev.rdf453.PatternBond.masterProvider.MasterProviderBlockEntity;
+public class PatternGlueEntity extends Entity implements IEntityWithComplexSpawn {
+    public Map<BlockPos,Integer> SlotHashMap = new HashMap<>();
 
-public class PatternGlueEntity extends BlockEntity implements IEntityWithComplexSpawn {
-    
     public static AABB span(BlockPos start, BlockPos end) {
         return new AABB(Vec3.atLowerCornerOf(start),Vec3.atLowerCornerOf(end)).expandTowards(1,1,1);
     }
 
-    public static boolean isGlued(LevelAccess level, BlockPos blockPos, Direction direction, Set<PatternGlueEntity> cached) {
-        BlockPos targetPos = blockPos.relative(direction);
-        for (PatternGlueEntity pEntity: cached) {
-            if(pEntity.contain(blockPos)&& pEntity.contain(targetPos)) {
-                return true;
+    public int setSlot(LevelAccessor level, BlockPos pos,Set<PatternGlueEntity> data) {
+        if(level == null) return 0;
+        int slotCount;
+        int totalSlots = 0;
+        for(BlockPos position : BlockPos.betweenClosed(getBoundingBox())) {
+            BlockEntity bEntity = level.getBlockEntity(position);
+
+            if(bEntity instanceof PatternProviderBlockEntity) {
+                slotCount= MasterProviderBlockEntity.sendSlot(level,position);
+                SlotHashMap.put(position.immutable(), slotCount);
+                totalSlots += slotCount;
             }
         }
-        for(PatternGlueEntity pEntity: level.getEntitesOfClass(PatternGlueEntity.class,
-            span(blockPos, targetPos).inflate(16))) {
-                if(!pEntity.contain(blockPos)||pEntity.contain(targetPos) {
-                    
-                })
-            }
-    } 
+        return totalSlots;
+    }
+
 
 }
+//영역 표시 
