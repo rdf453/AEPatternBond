@@ -7,7 +7,7 @@ import appeng.core.definitions.AEBlockEntities;
 
 public class dummyBlockEntity extends BlockEntity{
     public dummyBlockEntity(BlockPos pos,BlockState state) {
-        super(PATTERN_PROVIDER, pos, state);
+        super(AEBlockEntities.PATTERN_PROVIDER.get(), pos, state);
         //나중에 더미 블럭 엔티티 타입 생성해서 넣을것
     }
 }
