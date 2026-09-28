@@ -1,6 +1,7 @@
 package dev.rdf453.PatternBond.master;
 
 import appeng.block.AEBaseEntityBlock;
+import net.minecraft.world.level.storage.ValueInput;
 
 public class ProviderAdepterBlock extends AEBaseEntityBlock<ProviderAdepterBlockEntity>{
     
@@ -8,6 +9,7 @@ public class ProviderAdepterBlock extends AEBaseEntityBlock<ProviderAdepterBlock
         super(props);
     }
 
+    
 
 }
 //https://github.com/AppliedEnergistics/Applied-Energistics-2/blob/main/src/main/java/appeng/block/AEBaseEntityBlock.java
