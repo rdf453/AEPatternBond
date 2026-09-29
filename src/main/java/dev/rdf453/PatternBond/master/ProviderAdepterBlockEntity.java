@@ -4,6 +4,7 @@ import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -19,6 +20,7 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.util.ProblemReporter;
+import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.LevelAccessor;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
@@ -31,7 +33,8 @@ public class ProviderAdepterBlockEntity extends PatternProviderBlockEntity {
     public Set<BlockPos> dummyPos = new HashSet<>();
     public static Map<BlockPos, CompoundTag> nbtSave = new HashMap<>();
     public static List<InternalInventory> inventories = new ArrayList<>();
-    public static CombinedInternalInventory combined;
+    public Map<BlockPos,List<ItemStack>> originInv = new HashMap<>();
+    public CombinedInternalInventory combined;
     public ProviderAdepterBlockEntity(BlockPos pos, BlockState state) {
         super(AEBlockEntities.PATTERN_PROVIDER.get(), pos, state);
 
@@ -40,6 +43,10 @@ public class ProviderAdepterBlockEntity extends PatternProviderBlockEntity {
     @Override
     protected PatternProviderLogic createLogic() {
         return new AdpeterLogic(this.getMainNode(), this);
+    }
+
+    public PatternProviderBlockEntity getDummy(BlockPos pos) {
+        return (PatternProviderBlockEntity)level.getBlockEntity(pos);
     }
 
     // 주변 패턴제공자를 더미로 종속화
@@ -54,6 +61,10 @@ public class ProviderAdepterBlockEntity extends PatternProviderBlockEntity {
         if (level == null || level.isClientSide())
             return;
         init();
+        reNewalCombinedInv();
+    }
+    
+    public void reNewalCombinedInv() {
         combined = new CombinedInternalInventory(inventories.toArray(InternalInventory[]::new));
     }
 
@@ -128,16 +139,19 @@ public class ProviderAdepterBlockEntity extends PatternProviderBlockEntity {
         if (this.dummyPos.isEmpty()) {
             findProvider(level, worldPosition);
             for (BlockPos pos : dummyPos) {
-                BlockEntity origin = level.getBlockEntity(pos);
+                PatternProviderBlockEntity origin = (PatternProviderBlockEntity)level.getBlockEntity(pos);
 
-                BlockEntity temp = new DummyBlockEntity(pos, level.getBlockState(pos), worldPosition,
+                DummyBlockEntity temp = new DummyBlockEntity(pos, level.getBlockState(pos), worldPosition,
                         setSlot(level, pos));
                 nbtSave.put(pos.immutable(), saveProviderDada(origin));
+                
                 level.removeBlockEntity(pos);
+                temp.getLogic().ac.patternInventory(origin.getLogic().getPatternInv());
                 level.setBlockEntity(temp);
-
+                
                 if (level.getBlockEntity(pos) instanceof DummyBlockEntity provider) {
                     inventories.add(provider.getLogic().getPatternInv());
+                    
                 }
             }
 

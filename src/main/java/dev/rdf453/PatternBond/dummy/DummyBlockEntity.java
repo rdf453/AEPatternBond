@@ -9,6 +9,7 @@ import net.minecraft.world.level.storage.ValueInput;
 import net.minecraft.world.level.storage.ValueOutput;
 import appeng.blockentity.crafting.PatternProviderBlockEntity;
 import appeng.core.definitions.AEBlockEntities;
+import appeng.helpers.patternprovider.PatternProviderLogic;
 import dev.rdf453.PatternBond.master.ProviderAdepterBlockEntity;
 
 public class DummyBlockEntity extends PatternProviderBlockEntity{
@@ -20,6 +21,19 @@ public class DummyBlockEntity extends PatternProviderBlockEntity{
         this.masterPos=masterPos;
         this.slotSize=slotSize;
         //나중에 더미 블럭 엔티티 타입 생성해서 넣을것
+    }
+
+    public BlockPos worldPos() {
+        return worldPosition;
+    }
+
+    public PatternProviderBlockEntity getMaster() {
+        return (PatternProviderBlockEntity)level.getBlockEntity(masterPos);
+    }
+
+    @Override 
+    protected PatternProviderLogic createLogic() {
+        return  new DummyLogic(this.getMainNode(),this,slotSize);
     }
 
     @Override 
