@@ -9,11 +9,11 @@ import appeng.helpers.patternprovider.PatternProviderLogic;
 import appeng.helpers.patternprovider.PatternProviderLogicHost;
 import appeng.util.inv.AppEngInternalInventory;
 import dev.rdf453.PatternBond.master.AdpeterLogic;
-import dev.rdf453.PatternBond.mixin.PatternLogicMixin;
+import dev.rdf453.PatternBond.mixin.PatternLogicAccessor;
 
 public class DummyLogic extends PatternProviderLogic {
     //기존 제공자의 인벤토리 연결 복사해놓고 붙이기
-    PatternLogicMixin ac = (PatternLogicMixin) this;
+    public PatternLogicAccessor ac = (PatternLogicAccessor) this;
     DummyBlockEntity de = (DummyBlockEntity)ac.host().getBlockEntity();
     AdpeterLogic masterLogic = (AdpeterLogic) de.getMaster().getLogic();
 
@@ -23,8 +23,9 @@ public class DummyLogic extends PatternProviderLogic {
 
     @Override
     public void onChangeInventory(AppEngInternalInventory inv, int slot) {
+        this.saveChanges();
         masterLogic.onChangeInventory(inv, slot);
-        copy();
+        
     }
 
     @Override
@@ -38,12 +39,9 @@ public class DummyLogic extends PatternProviderLogic {
         ICraftingProvider.requestUpdate(ac.mainNode());
     }
     
-    @Override
-    public List<IPatternDetails> getAvailablePatterns() {
-        return ac.patterns();
-        // 니가 일해
-    }
+    
     private void copy() {
+        //디코딩 된 패턴,패턴인풋 마스터 걸로 통일
         ac.patterns().clear();
         ac.patterns().addAll(masterLogic.ac.patterns());
         ac.patternInputs().clear();

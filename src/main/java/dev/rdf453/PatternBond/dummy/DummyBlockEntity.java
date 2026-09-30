@@ -7,20 +7,23 @@ import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.storage.ValueInput;
 import net.minecraft.world.level.storage.ValueOutput;
+import appeng.api.inventories.InternalInventory;
 import appeng.blockentity.crafting.PatternProviderBlockEntity;
 import appeng.core.definitions.AEBlockEntities;
 import appeng.helpers.patternprovider.PatternProviderLogic;
+import appeng.util.inv.AppEngInternalInventory;
 import dev.rdf453.PatternBond.master.ProviderAdepterBlockEntity;
 
-public class DummyBlockEntity extends PatternProviderBlockEntity{
+public class DummyBlockEntity extends PatternProviderBlockEntity {
     public BlockPos masterPos;
     public int slotSize;
     CompoundTag origin;
-    public DummyBlockEntity(BlockPos pos,BlockState state,BlockPos masterPos,int slotSize) {
+
+    public DummyBlockEntity(BlockPos pos, BlockState state, BlockPos masterPos, int slotSize) {
         super(AEBlockEntities.PATTERN_PROVIDER.get(), pos, state);
-        this.masterPos=masterPos;
-        this.slotSize=slotSize;
-        //나중에 더미 블럭 엔티티 타입 생성해서 넣을것
+        this.masterPos = masterPos;
+        this.slotSize = slotSize;
+        // 나중에 더미 블럭 엔티티 타입 생성해서 넣을것
     }
 
     public BlockPos worldPos() {
@@ -28,45 +31,54 @@ public class DummyBlockEntity extends PatternProviderBlockEntity{
     }
 
     public PatternProviderBlockEntity getMaster() {
-        return (PatternProviderBlockEntity)level.getBlockEntity(masterPos);
+        return (PatternProviderBlockEntity) level.getBlockEntity(masterPos);
     }
 
-    @Override 
+    @Override
     protected PatternProviderLogic createLogic() {
-        return  new DummyLogic(this.getMainNode(),this,slotSize);
+        return new DummyLogic(this.getMainNode(), this, slotSize);
     }
 
-    @Override 
+    @Override
     public void saveAdditional(ValueOutput data) {
         origin = loadCompoundTag(worldPosition);
-        if(origin != null) 
-            data.store("OriginalProvider",CompoundTag.CODEC,origin);
+        if (origin != null)
+            data.store("OriginalProvider", CompoundTag.CODEC, origin);
         data.putLong("MasterPos", masterPos.asLong());
         data.putInt("SlotSize", slotSize);
         super.saveAdditional(data);
     }
 
-    @Override 
+    @Override
     public void loadAdditional(ValueInput data) {
-        this.origin=data.read("OriginalProvider",CompoundTag.CODEC).orElse(null);
-        this.masterPos=data.getLong("MasterPos").map(BlockPos::of).orElse(null);
-        this.slotSize=data.getIntOr("SlotSize", 9);
+        this.origin = data.read("OriginalProvider", CompoundTag.CODEC).orElse(null);
+        this.masterPos = data.getLong("MasterPos").map(BlockPos::of).orElse(null);
+        this.slotSize = data.getIntOr("SlotSize", 9);
         super.loadAdditional(data);
     }
-    //수정 필요
-    public void rollback(BlockPos pos, BlockState blockState){
-        BlockEntity temp = new PatternProviderBlockEntity(
-            AEBlockEntities.PATTERN_PROVIDER.get()
-            ,worldPosition,
-            this.getBlockState());
+
+    // 수정 필요
+    public void rollback(BlockPos pos, BlockState blockState) {
+        PatternProviderBlockEntity temp = new PatternProviderBlockEntity(
+                AEBlockEntities.PATTERN_PROVIDER.get(), worldPosition,
+                this.getBlockState());
+        DummyBlockEntity origin = (DummyBlockEntity) level.getBlockEntity(worldPosition);
         level.removeBlockEntity(worldPosition);
         level.setBlockEntity(temp);
-    
+        InternalInventory source = origin.getLogic().getPatternInv();
+        InternalInventory target = temp.getLogic().getPatternInv();
+
+        if (source instanceof AppEngInternalInventory sInv
+                && target instanceof AppEngInternalInventory tInv) {
+            tInv.fromItemContainerContents(sInv.toItemContainerContents());
+        }
+
     }
-    //nbtSave에서 값 꺼내서 저장 구현
+    // nbtSave에서 값 꺼내서 저장 구현
 
     private CompoundTag loadCompoundTag(BlockPos pos) {
         return ProviderAdepterBlockEntity.nbtSave.get(pos);
     }
+    
 }
-//마스터 블럭에 의해서 생성 기존 제공자 블럭엔티티 대체 및 소멸시 기존 블럭 엔티티 생성
+// 마스터 블럭에 의해서 생성 기존 제공자 블럭엔티티 대체 및 소멸시 기존 블럭 엔티티 생성

@@ -13,8 +13,10 @@ import appeng.api.inventories.InternalInventory;
 import appeng.blockentity.crafting.PatternProviderBlockEntity;
 import appeng.core.definitions.AEBlockEntities;
 import appeng.helpers.patternprovider.PatternProviderLogic;
+import appeng.util.inv.AppEngInternalInventory;
 import appeng.util.inv.CombinedInternalInventory;
 import dev.rdf453.PatternBond.dummy.DummyBlockEntity;
+import dev.rdf453.PatternBond.dummy.DummyLogic;
 import dev.rdf453.PatternBond.master.AdpeterLogic;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
@@ -32,7 +34,7 @@ public class ProviderAdepterBlockEntity extends PatternProviderBlockEntity {
     public Map<BlockPos, Integer> SlotHashMap = new HashMap<>();
     public Set<BlockPos> dummyPos = new HashSet<>();
     public static Map<BlockPos, CompoundTag> nbtSave = new HashMap<>();
-    public static List<InternalInventory> inventories = new ArrayList<>();
+    public List<InternalInventory> inventories = new ArrayList<>();
     public Map<BlockPos,List<ItemStack>> originInv = new HashMap<>();
     public CombinedInternalInventory combined;
     public ProviderAdepterBlockEntity(BlockPos pos, BlockState state) {
@@ -143,10 +145,16 @@ public class ProviderAdepterBlockEntity extends PatternProviderBlockEntity {
 
                 DummyBlockEntity temp = new DummyBlockEntity(pos, level.getBlockState(pos), worldPosition,
                         setSlot(level, pos));
+                InternalInventory source = origin.getLogic().getPatternInv();        
+                InternalInventory target =temp.getLogic().getPatternInv();       
                 nbtSave.put(pos.immutable(), saveProviderDada(origin));
                 
                 level.removeBlockEntity(pos);
-                temp.getLogic().ac.patternInventory(origin.getLogic().getPatternInv());
+                if(source instanceof AppEngInternalInventory sInv
+                    && target instanceof AppEngInternalInventory tInv) {
+                        tInv.fromItemContainerContents(sInv.toItemContainerContents());
+                    }
+                
                 level.setBlockEntity(temp);
                 
                 if (level.getBlockEntity(pos) instanceof DummyBlockEntity provider) {
@@ -156,5 +164,9 @@ public class ProviderAdepterBlockEntity extends PatternProviderBlockEntity {
             }
 
         }
+    }
+
+    public BlockPos getAdepterPos() {
+        return worldPosition;
     }
 }

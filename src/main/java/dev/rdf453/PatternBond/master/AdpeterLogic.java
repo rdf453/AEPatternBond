@@ -25,13 +25,13 @@ import appeng.helpers.patternprovider.PatternProviderLogic;
 import appeng.helpers.patternprovider.PatternProviderLogicHost;
 import appeng.util.inv.AppEngInternalInventory;
 import dev.rdf453.PatternBond.dummy.DummyLogic;
-import dev.rdf453.PatternBond.mixin.PatternLogicMixin;
+import dev.rdf453.PatternBond.mixin.PatternLogicAccessor;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.item.ItemStack;
 
 public class AdpeterLogic extends PatternProviderLogic {
-    public PatternLogicMixin ac = (PatternLogicMixin) this;
+    public PatternLogicAccessor ac = (PatternLogicAccessor) this;
     private final ProviderAdepterBlockEntity be;
 
     public AdpeterLogic(IManagedGridNode mainNode, PatternProviderLogicHost host) {

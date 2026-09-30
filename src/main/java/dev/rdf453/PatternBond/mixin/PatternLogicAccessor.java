@@ -14,9 +14,11 @@ import appeng.api.stacks.GenericStack;
 import appeng.helpers.patternprovider.PatternProviderLogic;
 import appeng.helpers.patternprovider.PatternProviderLogicHost;
 import appeng.util.inv.AppEngInternalInventory;
+import net.minecraft.core.NonNullList;
+import net.minecraft.world.item.ItemStack;
 
 @Mixin(PatternProviderLogic.class)
-    public interface PatternLogicMixin {
+    public interface PatternLogicAccessor {
         @Accessor("mainNode")
         public  IManagedGridNode mainNode();
 
@@ -35,7 +37,12 @@ import appeng.util.inv.AppEngInternalInventory;
 
         @Mutable 
         @Accessor ("patternInventory")
-        public AppEngInternalInventory patternInventory(AppEngInternalInventory inventory);
+        public void patternInventory(AppEngInternalInventory inventory);
+
+        @Accessor ("patternInventory")
+        public AppEngInternalInventory getPatternInventory();
+
+    
 
 
 
