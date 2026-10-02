@@ -80,5 +80,6 @@ public class DummyBlockEntity extends PatternProviderBlockEntity {
         return ProviderAdepterBlockEntity.nbtSave.get(pos);
     }
     
+    
 }
 // 마스터 블럭에 의해서 생성 기존 제공자 블럭엔티티 대체 및 소멸시 기존 블럭 엔티티 생성

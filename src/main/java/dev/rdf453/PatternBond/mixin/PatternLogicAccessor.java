@@ -14,8 +14,6 @@ import appeng.api.stacks.GenericStack;
 import appeng.helpers.patternprovider.PatternProviderLogic;
 import appeng.helpers.patternprovider.PatternProviderLogicHost;
 import appeng.util.inv.AppEngInternalInventory;
-import net.minecraft.core.NonNullList;
-import net.minecraft.world.item.ItemStack;
 
 @Mixin(PatternProviderLogic.class)
     public interface PatternLogicAccessor {

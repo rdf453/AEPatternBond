@@ -20,15 +20,19 @@ import dev.rdf453.PatternBond.dummy.DummyLogic;
 import dev.rdf453.PatternBond.master.AdpeterLogic;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.core.Registry;
+import net.minecraft.core.registries.Registries;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.util.ProblemReporter;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.LevelAccessor;
 import net.minecraft.world.level.block.entity.BlockEntity;
+import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.storage.TagValueOutput;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
+import net.neoforged.neoforge.registries.DeferredRegister;
 
 public class ProviderAdepterBlockEntity extends PatternProviderBlockEntity {
     public Map<BlockPos, Integer> SlotHashMap = new HashMap<>();
@@ -129,13 +133,7 @@ public class ProviderAdepterBlockEntity extends PatternProviderBlockEntity {
         return 0;
     }
 
-    private int sumTotalSlot() {
-        int temp = 0;
-        for (int slotCount : SlotHashMap.values()) {
-            temp += slotCount;
-        }
-        return temp;
-    }
+
 
     private void init() {
         if (this.dummyPos.isEmpty()) {
@@ -169,4 +167,7 @@ public class ProviderAdepterBlockEntity extends PatternProviderBlockEntity {
     public BlockPos getAdepterPos() {
         return worldPosition;
     }
+    
+
+
 }
